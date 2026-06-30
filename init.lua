@@ -89,6 +89,11 @@ P.S. You can delete this when you're done too. It's your config now! :)
 -- Core Neovim settings, leaders, options, basic keymaps, basic autocmds
 -- ============================================================
 do
+  -- [[ Setting options ]]
+  --  See `:help vim.o`
+  -- NOTE: You can change these options as you wish!
+  --  For more options, you can see `:help option-list`
+
   -- Enable faster startup by caching compiled Lua modules
   vim.loader.enable()
 
@@ -100,11 +105,6 @@ do
 
   -- Set to true if you have a Nerd Font installed and selected in the terminal
   vim.g.have_nerd_font = false
-
-  -- [[ Setting options ]]
-  --  See `:help vim.o`
-  -- NOTE: You can change these options as you wish!
-  --  For more options, you can see `:help option-list`
 
   -- Make line numbers default
   vim.o.number = true
@@ -251,6 +251,18 @@ do
     group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
     callback = function() vim.hl.on_yank() end,
   })
+
+  local map = vim.keymap.set
+
+  -- LazyGit
+  map("n", "<leader>lg", "<cmd>LazyGit<CR>", { desc = "LazyGit" })
+
+  -- Neo-tree toggle
+  map("n", "<leader>e", "<cmd>Neotree toggle<CR>", { desc = "Toggle Neo-tree" })
+
+  -- Focus Neo-tree
+  map("n", "<leader>lf", "<cmd>Neotree focus<CR>", { desc = "Focus Neo-tree" })
+
 end
 
 -- ============================================================
@@ -327,7 +339,8 @@ local function gh(repo) return 'https://github.com/' .. repo end
 
 -- ============================================================
 -- SECTION 4: UI / CORE UX PLUGINS
--- guess-indent, gitsigns, which-key, colorscheme, todo-comments, mini modules
+-- guess-indent, gitsigns, which-key, colorscheme, todo-comments, mini modules,
+-- statusline, file explorer, telescope
 -- ============================================================
 do
   -- [[ Installing and Configuring Plugins ]]
@@ -382,90 +395,81 @@ do
   -- change the command under that to load whatever the name of that colorscheme is.
   --
   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-  vim.pack.add { gh 'folke/tokyonight.nvim' }
+  vim.pack.add { gh 'maxmx03/solarized.nvim' }
   ---@diagnostic disable-next-line: missing-fields
-  require('tokyonight').setup {
+  require('solarized').setup {
     styles = {
       comments = { italic = false }, -- Disable italics in comments
     },
   }
 
+  vim.pack.add {
+    { src = 'https://github.com/goolord/alpha-nvim' },
+  }
+  require 'config.alpha'
+
   -- Load the colorscheme here.
   -- Like many other themes, this one has different styles, and you could load
   -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-  vim.cmd.colorscheme 'tokyonight-night'
+  vim.cmd.colorscheme 'solarized'
 
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }
   require('todo-comments').setup { signs = false }
 
+  -- Statusline
+  vim.pack.add {
+    gh 'nvim-tree/nvim-web-devicons',
+    gh 'nvim-lualine/lualine.nvim',
+  }
+  require('lualine').setup {
+    options = {
+      theme = 'auto',
+      globalstatus = true,
+    },
+    sections = {
+      lualine_b = { 'branch' },
+    },
+  }
+
+  -- File explorer
+  vim.pack.add {
+    {
+      src = 'https://github.com/nvim-neo-tree/neo-tree.nvim',
+      version = vim.version.range '3',
+    },
+    -- dependencies
+    'https://github.com/nvim-lua/plenary.nvim',
+    'https://github.com/MunifTanjim/nui.nvim',
+    -- optional, but recommended
+    'https://github.com/nvim-tree/nvim-web-devicons',
+  }
+  require('neo-tree').setup {
+    filesystem = {
+      use_libuv_file_watcher = true,
+      -- Show hidden files (files starting with a dot) by default
+      filtered_items = {
+        visible = true,
+        show_hidden_count = true,
+      },
+    },
+    window = {
+      mappings = {
+        -- Map 'h' to close a node (collapse directory)
+        ['h'] = 'close_node',
+        -- Map 'l' to open a node (expand directory / open file)
+        ['l'] = 'open',
+      },
+    },
+  }
+
+  -- Lazygit integration
+  vim.pack.add { gh 'kdheepak/lazygit.nvim' }
+
   -- [[ mini.nvim ]]
   --  A collection of various small independent plugins/modules
   vim.pack.add { gh 'nvim-mini/mini.nvim' }
 
-  -- If a nerd font is available, load the icons module for pretty icons in various plugins.
-  if vim.g.have_nerd_font then
-    require('mini.icons').setup()
-    -- Used for backwards compatibility with plugins that require `nvim-web-devicons` (e.g. telescope.nvim)
-    MiniIcons.mock_nvim_web_devicons()
-  end
-
-  -- Better Around/Inside textobjects
-  --
-  -- Examples:
-  --  - va)  - [V]isually select [A]round [)]paren
-  --  - yiiq - [Y]ank [I]nside [I]+1 [Q]uote
-  --  - ci'  - [C]hange [I]nside [']quote
-  require('mini.ai').setup {
-    -- NOTE: Avoid conflicts with the built-in incremental selection mappings on Neovim>=0.12 (see `:help treesitter-incremental-selection`)
-    mappings = {
-      around_next = 'aa',
-      inside_next = 'ii',
-    },
-    n_lines = 500,
-  }
-
-  -- Add/delete/replace surroundings (brackets, quotes, etc.)
-  --
-  -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
-  -- - sd'   - [S]urround [D]elete [']quotes
-  -- - sr)'  - [S]urround [R]eplace [)] [']
-  require('mini.surround').setup()
-
-  -- Simple and easy statusline.
-  --  You could remove this setup call if you don't like it,
-  --  and try some other statusline plugin
-  local statusline = require 'mini.statusline'
-  -- Set `use_icons` to true if you have a Nerd Font
-  statusline.setup { use_icons = vim.g.have_nerd_font }
-
-  -- You can configure sections in the statusline by overriding their
-  -- default behavior. For example, here we set the section for
-  -- cursor location to LINE:COLUMN
-  ---@diagnostic disable-next-line: duplicate-set-field
-  statusline.section_location = function() return '%2l:%-2v' end
-
-  -- ... and there is more!
-  --  Check out: https://github.com/nvim-mini/mini.nvim
-end
-
--- ============================================================
--- SECTION 5: SEARCH & NAVIGATION
--- Telescope setup, keymaps, LSP picker mappings
--- ============================================================
-do
-  -- [[ Fuzzy Finder (files, lsp, etc) ]]
-  --
-  -- Telescope is a fuzzy finder that comes with a lot of different things that
-  -- it can fuzzy find! It's more than just a "file finder", it can search
-  -- many different aspects of Neovim, your workspace, LSP, and more!
-  --
-  -- There are lots of other alternative pickers (like snacks.picker, or fzf-lua)
-  -- so feel free to experiment and see what you like!
-  --
-  -- The easiest way to use Telescope, is to start by doing something like:
-  --  :Telescope help_tags
-  --
   -- After running this command, a window will open up and you're able to
   -- type in the prompt window. You'll see a list of `help_tags` options and
   -- a corresponding preview of the help.
@@ -585,7 +589,7 @@ do
 end
 
 -- ============================================================
--- SECTION 6: LSP
+-- SECTION 5: LSP
 -- LSP keymaps, server configuration, Mason tools installations
 -- ============================================================
 do
@@ -771,7 +775,7 @@ do
 end
 
 -- ============================================================
--- SECTION 7: FORMATTING
+-- SECTION 6: FORMATTING
 -- conform.nvim setup and keymap
 -- ============================================================
 do
@@ -797,11 +801,6 @@ do
     -- You can also specify external formatters in here.
     formatters_by_ft = {
       -- rust = { 'rustfmt' },
-      -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
-      --
-      -- You can use 'stop_after_first' to run the first available formatter from the list
-      -- javascript = { "prettierd", "prettier", stop_after_first = true },
     },
   }
 
@@ -809,7 +808,7 @@ do
 end
 
 -- ============================================================
--- SECTION 8: AUTOCOMPLETE & SNIPPETS
+-- SECTION 7: AUTOCOMPLETE & SNIPPETS
 -- blink.cmp and luasnip setup
 -- ============================================================
 do
@@ -851,7 +850,7 @@ do
       -- <c-e>: Hide menu
       -- <c-k>: Toggle signature help
       --
-      -- See `:help blink-cmp-config-keymap` for defining your own keymap
+      -- See :h blink-cmp-config-keymap for defining your own keymap
       preset = 'default',
 
       -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
@@ -871,7 +870,7 @@ do
     },
 
     sources = {
-      default = { 'lsp', 'path', 'snippets' },
+      default = { 'lsp', 'path', 'snippets', 'buffer' },
     },
 
     snippets = { preset = 'luasnip' },
@@ -882,7 +881,7 @@ do
     -- By default, we use the Lua implementation instead, but you may enable
     -- the rust implementation via `'prefer_rust_with_warning'`
     --
-    -- See `:help blink-cmp-config-fuzzy` for more information
+    -- See :h blink-cmp-config-fuzzy for more information
     fuzzy = { implementation = 'lua' },
 
     -- Shows a signature help window while you type arguments for a function
@@ -891,15 +890,10 @@ do
 end
 
 -- ============================================================
--- SECTION 9: TREESITTER
--- Parser installation, syntax highlighting, folds, indentation
+-- SECTION 8: TREESITTER
+-- nvim-treesitter parser install & auto-attach
 -- ============================================================
 do
-  -- [[ Configure Treesitter ]]
-  --  Used to highlight, edit, and navigate code
-  --
-  --  See `:help nvim-treesitter-intro`
-
   -- NOTE: You can also specify a branch or a specific commit
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
@@ -953,7 +947,7 @@ do
 end
 
 -- ============================================================
--- SECTION 10: OPTIONAL EXAMPLES / NEXT STEPS
+-- SECTION 9: OPTIONAL EXAMPLES / NEXT STEPS
 -- kickstart.plugins.* examples
 -- ============================================================
 do
