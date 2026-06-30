@@ -800,6 +800,10 @@ do
     },
     -- You can also specify external formatters in here.
     formatters_by_ft = {
+      verilog = { 'verible' },
+      systemverilog = { 'verible' },
+      c = { 'clang-format' },
+      cpp = { 'clang-format' },
       -- rust = { 'rustfmt' },
     },
   }
