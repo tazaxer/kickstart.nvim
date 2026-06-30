@@ -253,7 +253,9 @@ do
   })
 
   local map = vim.keymap.set
-
+  vim.keymap.set("n", "<Home>", "<cmd>Alpha<CR>", {
+  desc = "Open Alpha dashboard",
+})
   -- LazyGit
   map("n", "<leader>lg", "<cmd>LazyGit<CR>", { desc = "LazyGit" })
 
@@ -261,7 +263,7 @@ do
   map("n", "<leader>e", "<cmd>Neotree toggle<CR>", { desc = "Toggle Neo-tree" })
 
   -- Focus Neo-tree
-  map("n", "<leader>lf", "<cmd>Neotree focus<CR>", { desc = "Focus Neo-tree" })
+  map("n", "<leader>nf", "<cmd>Neotree focus<CR>", { desc = "Focus Neo-tree" })
 
 end
 
@@ -459,6 +461,7 @@ do
         ['h'] = 'close_node',
         -- Map 'l' to open a node (expand directory / open file)
         ['l'] = 'open',
+        ['-'] = 'navigate_up',
       },
     },
   }
